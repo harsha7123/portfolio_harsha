@@ -20,43 +20,23 @@ export default function Hero({ position = [0, 0, 0], rotationY = 0 }) {
   useEffect(() => {
     if (!scene) return;
 
-    // Find body mesh and re-style cleanly
+    // Uniform cinematic coat material — robust across compressed/simplified GLBs.
     scene.traverse((obj) => {
       if (obj.isMesh || obj.isSkinnedMesh) {
         obj.castShadow = true;
         obj.receiveShadow = false;
         obj.frustumCulled = false;
-
-        // Decide region by Y-position of bounding box center (head vs body)
-        obj.geometry.computeBoundingBox();
-        const bb = obj.geometry.boundingBox;
-        const centerY = bb ? (bb.min.y + bb.max.y) / 2 : 0;
-
-        let mat;
-        // Head region (top of model) — warm skin tone
-        if (centerY > 1.4) {
-          mat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color("#a87a5e"),  // warm tan skin
-            metalness: 0.0,
-            roughness: 0.55,
-            emissive: new THREE.Color("#2a1410"),
-            emissiveIntensity: 0.18,
-          });
-        } else {
-          // Coat / body / pants — dark cinematic coat
-          mat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color("#22191a"),
-            metalness: 0.4,
-            roughness: 0.45,
-            emissive: new THREE.Color("#1a0c08"),
-            emissiveIntensity: 0.06,
-          });
-        }
-        obj.material = mat;
+        obj.material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color("#2a2024"),
+          metalness: 0.35,
+          roughness: 0.5,
+          emissive: new THREE.Color("#1a0c08"),
+          emissiveIntensity: 0.08,
+        });
       }
     });
 
-    scene.scale.setScalar(1.7);
+    scene.scale.setScalar(1.55);
     scene.position.set(0, -0.7, 0);
     scene.rotation.y = Math.PI;
   }, [scene]);
