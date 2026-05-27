@@ -9,23 +9,31 @@ const WAYPOINTS = {
 };
 
 const CAR_RING = 6.5;
-const CAM_PERP = 9.5; // perpendicular offset of camera from hero–car midline
+const CAM_PERP = 9.5;
 const CAM_HEIGHT = 3.8;
 
+function isPortrait() {
+  if (typeof window === "undefined") return false;
+  return window.innerHeight > window.innerWidth;
+}
+
 function framingForWork(angle) {
-  // Hero at origin; car at C = (cos*R, 0, sin*R)
-  // Camera placed at midpoint + perpendicular(angle) * CAM_PERP, lifted CAM_HEIGHT
-  // Looks at midpoint so both hero and car are framed in a 3/4 composition.
   const cx = Math.cos(angle) * CAR_RING;
   const cz = Math.sin(angle) * CAR_RING;
   const mx = cx / 2;
   const mz = cz / 2;
   const px = -Math.sin(angle);
   const pz = Math.cos(angle);
+  // On portrait/mobile, pull camera much further back + widen FOV so hero+car
+  // both fit in the narrow viewport.
+  const portrait = isPortrait();
+  const perpMul = portrait ? 1.8 : 1.0;
+  const heightMul = portrait ? 1.25 : 1.0;
+  const fov = portrait ? 78 : 56;
   return {
-    pos: [mx + px * CAM_PERP, CAM_HEIGHT, mz + pz * CAM_PERP],
+    pos: [mx + px * CAM_PERP * perpMul, CAM_HEIGHT * heightMul, mz + pz * CAM_PERP * perpMul],
     look: [mx, 0.9, mz],
-    fov: 56,
+    fov,
   };
 }
 
@@ -42,13 +50,26 @@ export default function CameraRig() {
   const lookAt = useRef({ x: 0, y: 1.2, z: 0 });
   const stateRef = useRef({ fov: 38 });
 
+  // Recompute camera waypoint when viewport flips between portrait/landscape
+  const [resizeKey, setResizeKey] = React.useState(0);
+  useEffect(() => {
+    const onResize = () => setResizeKey((k) => k + 1);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   useEffect(() => {
     let wp;
+    const portrait = isPortrait();
 
     if (activeSection === "home") {
-      wp = WAYPOINTS.home;
+      wp = portrait
+        ? { pos: [0, 2.6, 11], look: [0, 1.2, 0], fov: 52 }
+        : WAYPOINTS.home;
     } else if (activeSection === "contact") {
-      wp = WAYPOINTS.contact;
+      wp = portrait
+        ? { pos: [0, 2.2, 7], look: [0, 1.4, 0], fov: 50 }
+        : WAYPOINTS.contact;
     } else if (activeSection === "work") {
       const angle = freeDrive ? carAngle : (carRingIndex / 4) * Math.PI * 2;
       const base = framingForWork(angle);
@@ -94,7 +115,7 @@ export default function CameraRig() {
         camera.updateProjectionMatrix();
       },
     });
-  }, [activeSection, panelOpen, carRingIndex, carAngle, freeDrive, reducedMotion, camera]);
+  }, [activeSection, panelOpen, carRingIndex, carAngle, freeDrive, reducedMotion, camera, resizeKey]);
 
   // Continuous chase when free-driving (don't wait for re-renders)
   useFrame(() => {
