@@ -1,104 +1,83 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
+import { useGLTF, useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { usePortfolio } from "../../store/usePortfolio";
 
+const MODEL_URL = "/models/soldier.glb";
+
 /**
- * Stylized cinematic hero — procedural humanoid silhouette.
- * Generic, anonymous. Rim-lit, faceless.
+ * Cinematic stylized hero — rigged GLB with idle animation.
+ * Materials overridden to deep neo-noir matte black coat.
  */
 export default function Hero({ position = [0, 0, 0], rotationY = 0 }) {
   const group = useRef();
-  const idle = useRef(0);
+  const sceneRef = useRef();
   const { reducedMotion } = usePortfolio();
+  const { scene, animations } = useGLTF(MODEL_URL);
 
+  // Apply material override + setup once
+  useEffect(() => {
+    if (!scene) return;
+    scene.traverse((obj) => {
+      if (obj.isMesh || obj.isSkinnedMesh) {
+        obj.castShadow = true;
+        obj.frustumCulled = false;
+        // Replace material with deep matte neo-noir
+        const mat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color("#08080a"),
+          metalness: 0.25,
+          roughness: 0.6,
+          emissive: new THREE.Color("#000000"),
+          emissiveIntensity: 0,
+        });
+        obj.material = mat;
+      }
+    });
+    // Scale + offset
+    scene.scale.setScalar(1.55);
+    scene.position.set(0, -0.7, 0);
+    scene.rotation.y = Math.PI; // face camera (model defaults to facing +Z)
+  }, [scene]);
+
+  const { actions, names } = useAnimations(animations, sceneRef);
+
+  useEffect(() => {
+    if (!actions || !names || names.length === 0) return;
+    const idleName = names.find((n) => /idle/i.test(n)) || names[0];
+    const idle = actions[idleName];
+    if (idle) {
+      idle.reset();
+      idle.timeScale = reducedMotion ? 0 : 0.9;
+      idle.fadeIn(0.4).play();
+    }
+    return () => {
+      if (idle) idle.fadeOut(0.2).stop();
+    };
+  }, [actions, names, reducedMotion]);
+
+  const t0 = useRef(0);
   useFrame((_, dt) => {
-    idle.current += dt;
+    t0.current += dt;
     if (!group.current) return;
     if (reducedMotion) {
-      group.current.position.y = position[1];
       group.current.rotation.y = rotationY;
     } else {
-      group.current.position.y = position[1] + Math.sin(idle.current * 1.1) * 0.025;
-      group.current.rotation.y = rotationY + Math.sin(idle.current * 0.4) * 0.03;
+      group.current.rotation.y = rotationY + Math.sin(t0.current * 0.35) * 0.02;
     }
   });
 
-  const skin = new THREE.MeshStandardMaterial({
-    color: "#1a1a1d",
-    roughness: 0.7,
-    metalness: 0.1,
-    emissive: "#FF5A1F",
-    emissiveIntensity: 0.04,
-  });
-  const coat = new THREE.MeshStandardMaterial({
-    color: "#0d0d10",
-    roughness: 0.55,
-    metalness: 0.25,
-  });
-  const trim = new THREE.MeshStandardMaterial({
-    color: "#2a2a30",
-    roughness: 0.4,
-    metalness: 0.6,
-  });
-
   return (
-    <group ref={group} position={position} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, 1.05, 0]} material={coat} castShadow>
-        <cylinderGeometry args={[0.42, 0.28, 1.5, 14, 1]} />
-      </mesh>
-      <mesh position={[0, 1.72, 0]} material={trim} castShadow>
-        <sphereGeometry args={[0.46, 18, 14, 0, Math.PI * 2, 0, Math.PI / 2]} />
-      </mesh>
-      <mesh position={[0, 1.86, 0]} material={skin}>
-        <cylinderGeometry args={[0.1, 0.12, 0.14, 10]} />
-      </mesh>
-      <mesh position={[0, 2.06, 0]} material={skin} castShadow>
-        <sphereGeometry args={[0.22, 22, 18]} />
-      </mesh>
-      <mesh position={[0, 2.15, -0.02]} material={coat}>
-        <sphereGeometry args={[0.225, 22, 14, 0, Math.PI * 2, 0, Math.PI / 2.4]} />
-      </mesh>
+    <group ref={group} position={position} dispose={null}>
+      <primitive ref={sceneRef} object={scene} />
 
-      <group position={[-0.45, 1.55, 0]} rotation={[0, 0, 0.08]}>
-        <mesh material={coat} position={[0, -0.35, 0]} castShadow>
-          <capsuleGeometry args={[0.11, 0.55, 6, 12]} />
-        </mesh>
-        <mesh material={skin} position={[0, -0.78, 0]}>
-          <sphereGeometry args={[0.1, 12, 10]} />
-        </mesh>
-      </group>
-      <group position={[0.45, 1.55, 0]} rotation={[0, 0, -0.08]}>
-        <mesh material={coat} position={[0, -0.35, 0]} castShadow>
-          <capsuleGeometry args={[0.11, 0.55, 6, 12]} />
-        </mesh>
-        <mesh material={skin} position={[0, -0.78, 0]}>
-          <sphereGeometry args={[0.1, 12, 10]} />
-        </mesh>
-      </group>
-
-      <mesh position={[0, 0.35, 0]} material={coat}>
-        <boxGeometry args={[0.5, 0.2, 0.32]} />
-      </mesh>
-
-      <mesh position={[-0.15, -0.15, 0]} material={coat} castShadow>
-        <capsuleGeometry args={[0.13, 0.7, 6, 12]} />
-      </mesh>
-      <mesh position={[0.15, -0.15, 0]} material={coat} castShadow>
-        <capsuleGeometry args={[0.13, 0.7, 6, 12]} />
-      </mesh>
-
-      <mesh position={[-0.15, -0.62, 0.05]} material={trim}>
-        <boxGeometry args={[0.18, 0.08, 0.3]} />
-      </mesh>
-      <mesh position={[0.15, -0.62, 0.05]} material={trim}>
-        <boxGeometry args={[0.18, 0.08, 0.3]} />
-      </mesh>
-
-      <mesh position={[0, 1.2, -0.55]} rotation={[0, 0, 0]}>
-        <ringGeometry args={[0.9, 1.0, 32]} />
+      {/* Subtle cinematic rim halo behind hero */}
+      <mesh position={[0, 1.2, -0.65]}>
+        <ringGeometry args={[0.95, 1.02, 64]} />
         <meshBasicMaterial color="#FF5A1F" transparent opacity={0.18} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
 }
+
+useGLTF.preload(MODEL_URL);

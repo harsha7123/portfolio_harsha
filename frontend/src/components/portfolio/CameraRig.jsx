@@ -34,11 +34,16 @@ export default function CameraRig() {
       const cz = Math.sin(angle) * (RING + 1.2);
       wp = { pos: [cx, 3.4, cz], look: [bx, 2.2, bz], fov: 40 };
     } else if (activeSection === "work") {
+      // Chase cam slightly behind & above the car, looking through it to the hero
       const RING = 11;
       const angle = freeDrive ? carAngle : (carRingIndex / 4) * Math.PI * 2;
-      const cx = Math.cos(angle) * (RING + 5);
-      const cz = Math.sin(angle) * (RING + 5);
-      wp = { pos: [cx * 0.55, 5.2, cz * 0.55], look: [0, 1.2, 0], fov: 52 };
+      // car sits at (cos*RING, 0, sin*RING); camera sits BEHIND car along the same radial,
+      // i.e. further from origin by `chase` units, then up.
+      const chase = 6.5;
+      const camR = RING + chase;
+      const cx = Math.cos(angle) * camR;
+      const cz = Math.sin(angle) * camR;
+      wp = { pos: [cx, 4.2, cz], look: [0, 1.4, 0], fov: 48 };
     }
 
     const dur = reducedMotion ? 0.2 : 1.6;
@@ -74,9 +79,11 @@ export default function CameraRig() {
     camera.lookAt(lookAt.current.x, lookAt.current.y, lookAt.current.z);
     if (freeDrive && activeSection === "work" && !panelOpen) {
       const RING = 11;
+      const chase = 6.5;
+      const camR = RING + chase;
       const a = carAngle;
-      const tx = Math.cos(a) * (RING + 5) * 0.55;
-      const tz = Math.sin(a) * (RING + 5) * 0.55;
+      const tx = Math.cos(a) * camR;
+      const tz = Math.sin(a) * camR;
       camera.position.x += (tx - camera.position.x) * 0.06;
       camera.position.z += (tz - camera.position.z) * 0.06;
     }
