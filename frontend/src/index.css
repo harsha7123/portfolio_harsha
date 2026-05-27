@@ -1,0 +1,269 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============== FONTS ============== */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* ============== TOKENS ============== */
+:root {
+  /* base / void */
+  --bg-void: #0A0A0B;
+  --bg-elev: #121316;
+  --bg-line: #1E2024;
+
+  /* fire / ember */
+  --ember: #FF5A1F;
+  --ember-deep: #C81E0F;
+  --ember-soft: #FFB07A;
+
+  /* pixel-yellow accent */
+  --pixel: #FFFF69;
+  --pixel-dim: #BFBF4E;
+
+  /* text */
+  --text-hi: #ECECEC;
+  --text-mid: #9A9A9A;
+  --text-lo: #5A5A5E;
+
+  --cool-shadow: #2A3340;
+
+  --font-display: 'Press Start 2P', monospace;
+  --font-body: 'Space Grotesk', sans-serif;
+
+  /* shadcn defaults (kept for compatibility) */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 92%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 92%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 92%;
+  --primary: 56 100% 70%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 92%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 18 100% 56%;
+  --accent-foreground: 0 0% 7%;
+  --destructive: 0 80% 45%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 12%;
+  --input: 0 0% 12%;
+  --ring: 56 100% 70%;
+  --radius: 0.25rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg-void);
+  color: var(--text-hi);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+body {
+  background: radial-gradient(ellipse at center, #15151a 0%, var(--bg-void) 60%, #050506 100%);
+}
+
+::selection {
+  background: var(--pixel);
+  color: var(--bg-void);
+}
+
+/* ============== UTILS ============== */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.text-pixel { color: var(--pixel); }
+.text-ember { color: var(--ember); }
+.text-hi { color: var(--text-hi); }
+.text-mid { color: var(--text-mid); }
+.text-lo { color: var(--text-lo); }
+
+.bg-void { background: var(--bg-void); }
+.bg-elev { background: var(--bg-elev); }
+.border-line { border-color: var(--bg-line); }
+
+/* film grain overlay (CSS-only, no images) */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image:
+    repeating-radial-gradient(circle at 12% 18%, rgba(255,255,255,0.6) 0 1px, transparent 1px 3px),
+    repeating-radial-gradient(circle at 80% 60%, rgba(0,0,0,0.5) 0 1px, transparent 1px 4px);
+  animation: grain 1.6s steps(6) infinite;
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0,0); }
+  20% { transform: translate(-2%,1%); }
+  40% { transform: translate(1%,-1%); }
+  60% { transform: translate(-1%,2%); }
+  80% { transform: translate(2%,-2%); }
+}
+
+/* scanline subtle */
+.scanlines::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 55;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255,255,255,0.015) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* glow / ember utility */
+.glow-pixel {
+  text-shadow: 0 0 4px rgba(255,255,105,0.5), 0 0 12px rgba(255,255,105,0.25);
+}
+
+.glow-ember {
+  box-shadow: 0 0 30px rgba(255,90,31,0.35), inset 0 0 12px rgba(255,90,31,0.15);
+}
+
+/* form */
+.input-line {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--bg-line);
+  color: var(--text-hi);
+  padding: 10px 2px;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.input-line:focus {
+  border-bottom-color: var(--pixel);
+}
+.input-line::placeholder {
+  color: var(--text-lo);
+}
+
+/* btn */
+.btn-pixel {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: 1px solid var(--pixel);
+  color: var(--pixel);
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.btn-pixel:hover {
+  background: var(--pixel);
+  color: var(--bg-void);
+  box-shadow: 0 0 24px rgba(255,255,105,0.4);
+}
+.btn-pixel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ember {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: 1px solid var(--ember);
+  color: var(--ember);
+  background: transparent;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.btn-ember:hover {
+  background: var(--ember);
+  color: var(--bg-void);
+  box-shadow: 0 0 24px rgba(255,90,31,0.5);
+}
+
+/* progress */
+.progress-track {
+  width: 320px;
+  height: 4px;
+  background: var(--bg-line);
+  position: relative;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--pixel);
+  box-shadow: 0 0 12px rgba(255,255,105,0.7);
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* nav */
+.nav-link {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-mid);
+  cursor: pointer;
+  padding: 6px 10px;
+  position: relative;
+  transition: color 0.4s;
+}
+.nav-link:hover { color: var(--text-hi); }
+.nav-link.active { color: var(--pixel); }
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 10px; right: 10px; bottom: -2px;
+  height: 1px;
+  background: var(--pixel);
+  box-shadow: 0 0 8px rgba(255,255,105,0.6);
+}
+
+/* canvas should fill */
+canvas {
+  display: block;
+  touch-action: none;
+}
+
+@layer base {
+  * { @apply border-border; }
+}
+
+/* visual-edits helper */
+@layer base {
+  [data-debug-wrapper="true"] { display: contents !important; }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .grain::after, .scanlines::before { animation: none; }
+}
