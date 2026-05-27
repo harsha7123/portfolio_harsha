@@ -69,7 +69,7 @@ function App() {
   }, [activeSection]);
 
   return (
-    <div className="App grain scanlines" data-testid="app-root">
+    <div className="App" data-testid="app-root">
       <Preloader />
       <Scene />
       <Nav />

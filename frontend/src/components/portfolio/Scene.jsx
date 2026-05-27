@@ -48,8 +48,8 @@ export default function Scene() {
     dragRef.current.active = false;
   };
 
-  // Quality tier → DPR cap
-  const dpr = quality === "low" ? [1, 1] : quality === "mid" ? [1, 1.35] : [1, 1.75];
+  // Quality tier → DPR cap (push high tier higher for crisp 1080+ rendering)
+  const dpr = quality === "low" ? [1, 1.25] : quality === "mid" ? [1, 1.65] : [1, 2];
 
   return (
     <Canvas

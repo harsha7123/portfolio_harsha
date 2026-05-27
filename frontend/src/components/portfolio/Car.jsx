@@ -61,22 +61,22 @@ export default function Car({ groupRef }) {
         }
       }
 
-      // Headlights — much brighter for cinematic dark scene
+      // Headlights — moderate emissive only (avoid blown-out spheres)
       if (n.includes("headlight") || n.includes("front_light") || n.includes("light_front") || n.includes("head_light")) {
         obj.material = mat.clone();
         if (obj.material.emissive) {
           obj.material.emissive = new THREE.Color("#FFE9C4");
-          obj.material.emissiveIntensity = 6.0;
-          obj.material.color = new THREE.Color("#FFE9C4");
+          obj.material.emissiveIntensity = 1.6;
+          obj.material.color = new THREE.Color("#fff2d8");
         }
         return;
       }
-      // Tail-lights
+      // Tail-lights — subtle
       if (n.includes("taillight") || n.includes("brake") || n.includes("rear_light") || n.includes("tail_light")) {
         obj.material = mat.clone();
         if (obj.material.emissive) {
           obj.material.emissive = new THREE.Color("#FF1A1A");
-          obj.material.emissiveIntensity = 2.0;
+          obj.material.emissiveIntensity = 0.8;
         }
         return;
       }
@@ -111,21 +111,16 @@ export default function Car({ groupRef }) {
     <group ref={groupRef} position={[0, 0, 0]}>
       <primitive object={cloned} />
 
-      {/* Bright cinematic headlight pools + volumetric cones */}
+      {/* Soft cinematic headlight pools — no giant hot spheres */}
       {[-0.7, 0.7].map((x, i) => (
         <group key={`hl-${i}`} position={[x, 0.5, 2.2]}>
-          <pointLight color="#FFE9C4" intensity={5.5} distance={14} decay={1.4} />
-          {/* Hot inner ball */}
-          <mesh>
-            <sphereGeometry args={[0.14, 14, 12]} />
-            <meshBasicMaterial color="#FFFFFF" />
-          </mesh>
-          <mesh position={[0, -0.05, 1.8]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[1.3, 4.2, 22, 1, true]} />
+          <pointLight color="#FFE9C4" intensity={1.2} distance={9} decay={1.8} />
+          <mesh position={[0, -0.05, 1.4]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.7, 2.6, 18, 1, true]} />
             <meshBasicMaterial
               color="#FFE9C4"
               transparent
-              opacity={0.11}
+              opacity={0.04}
               side={THREE.DoubleSide}
               depthWrite={false}
             />
@@ -135,8 +130,8 @@ export default function Car({ groupRef }) {
 
       {/* Exhaust glow */}
       <mesh position={[0, 0.05, -2.5]}>
-        <sphereGeometry args={[0.2, 10, 10]} />
-        <meshBasicMaterial color="#FF5A1F" transparent opacity={0.6} />
+        <sphereGeometry args={[0.14, 10, 10]} />
+        <meshBasicMaterial color="#FF5A1F" transparent opacity={0.4} />
       </mesh>
     </group>
   );

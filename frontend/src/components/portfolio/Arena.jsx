@@ -114,7 +114,9 @@ export default function Arena({ heroRotationY }) {
     const x = Math.cos(a) * RING_RADIUS;
     const z = Math.sin(a) * RING_RADIUS;
     carRef.current.position.set(x, 0, z);
-    carRef.current.rotation.y = -a + Math.PI / 2;
+    // Face the hero in the centre (turn the car's front toward origin).
+    // The car model's "forward" is +Z, and we want it pointing toward -direction-from-origin.
+    carRef.current.rotation.y = Math.atan2(-x, -z);
     carRef.current.position.y = reducedMotion ? 0 : Math.sin(t * 4) * 0.01;
   });
 
