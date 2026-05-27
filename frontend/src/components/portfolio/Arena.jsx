@@ -158,24 +158,8 @@ export default function Arena({ heroRotationY }) {
 
       <Hero position={[0, 0, 0]} rotationY={heroRotationY} />
 
-      <spotLight
-        position={[3, 6, 3]}
-        angle={0.45}
-        penumbra={0.6}
-        intensity={3}
-        color="#FFD9A8"
-        castShadow
-        target-position={[0, 1, 0]}
-      />
-      <spotLight
-        position={[-2, 4, -5]}
-        angle={0.5}
-        penumbra={0.7}
-        intensity={2.2}
-        color="#5C7FFF"
-        target-position={[0, 1, 0]}
-      />
-      <pointLight position={[0, 0.4, 1.6]} color="#FF5A1F" intensity={1.4} distance={6} decay={2} />
+      {/* Scene-wide low fill light only (Hero owns its dedicated key/fill/rim) */}
+      <pointLight position={[0, 6, 0]} color="#3a4658" intensity={0.6} distance={30} decay={1.4} />
 
       <Car groupRef={carRef} />
 
