@@ -152,13 +152,13 @@ export default function Arena({ heroRotationY }) {
         <meshStandardMaterial color="#111114" metalness={0.8} roughness={0.25} emissive="#0a0a0b" />
       </mesh>
 
-      {Array.from({ length: 48 }).map((_, i) => {
-        const a = (i / 48) * Math.PI * 2;
+      {Array.from({ length: 24 }).map((_, i) => {
+        const a = (i / 24) * Math.PI * 2;
         const x = Math.cos(a) * RING_RADIUS;
         const z = Math.sin(a) * RING_RADIUS;
         return (
           <mesh key={i} position={[x, -0.66, z]} rotation={[-Math.PI / 2, 0, -a]}>
-            <planeGeometry args={[0.5, 0.08]} />
+            <planeGeometry args={[0.6, 0.1]} />
             <meshBasicMaterial color="#FFE9C4" transparent opacity={0.35} />
           </mesh>
         );
@@ -185,7 +185,7 @@ export default function Arena({ heroRotationY }) {
         active={activeSection === "work"}
       />
 
-      <Embers count={70} radius={14} />
+      <Embers count={35} radius={14} />
 
       {/* Cinematic background atmosphere — moon, skyline, window-lights */}
       <Atmosphere />

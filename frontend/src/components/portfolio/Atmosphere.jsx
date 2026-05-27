@@ -1,9 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useLayoutEffect } from "react";
 import * as THREE from "three";
 
-/**
- * Seeded PRNG so the skyline is deterministic across renders.
- */
 function mulberry32(seed) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -14,126 +11,163 @@ function mulberry32(seed) {
 }
 
 /**
- * Cinematic background atmosphere:
- *  - big glowing moon
- *  - layered city skyline of "real" buildings (boxes with window grids drawn
- *    as InstancedMesh on their facing side)
- *  - subtle haze planes for horizon
+ * Cinematic background — built with InstancedMesh for performance:
+ *  - one InstancedMesh holds ALL skyline buildings
+ *  - one InstancedMesh holds ALL window-dots
+ *  - moon stays separate (single object)
  */
 export default function Atmosphere() {
-  // Build skyline data
-  const data = useMemo(() => {
+  const buildingsRef = useRef();
+  const windowsRef = useRef();
+
+  const { buildings, windows } = useMemo(() => {
     const rnd = mulberry32(7);
     const ringR = 55;
     const buildings = [];
-    const windowDots = []; // small instanced points on facing side
-    const count = 90;
+    const windows = [];
+    const count = 60;
+
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2 + (rnd() - 0.5) * 0.04;
-      const layer = i % 3; // 3 depth layers for parallax feel
-      const rOff = layer * 6 + rnd() * 4;
+      const layer = i % 2;
+      const rOff = layer * 7 + rnd() * 4;
       const x = Math.cos(a) * (ringR + rOff);
       const z = Math.sin(a) * (ringR + rOff);
-      const w = 2.6 + rnd() * 3.2;
-      const h = 6 + rnd() * 22;
+      const w = 2.8 + rnd() * 3.4;
+      const h = 6 + rnd() * 20;
       const d = 2.2 + rnd() * 3;
-      const lit = rnd() < 0.6;
-      buildings.push({ x, z, w, h, d, lit, angle: a });
+      const lit = rnd() < 0.55;
+      const isTall = h > 22;
+      buildings.push({ x, z, w, h, d, lit, isTall, a });
 
-      // Generate window grid for lit buildings facing the center
       if (lit) {
-        const cols = Math.max(2, Math.floor(w / 0.55));
-        const rows = Math.max(3, Math.floor(h / 1.2));
+        const cols = Math.max(2, Math.floor(w / 0.7));
+        const rows = Math.max(3, Math.floor(h / 1.4));
         const stepX = w / (cols + 1);
         const stepY = h / (rows + 1);
-        // facing direction: from building toward origin
         const fx = -Math.cos(a);
         const fz = -Math.sin(a);
-        // right vector perpendicular to facing
         const rx = -fz;
         const rz = fx;
         for (let cy = 0; cy < rows; cy++) {
           for (let cx = 0; cx < cols; cx++) {
-            if (rnd() > 0.55) continue; // sparse windows
+            if (rnd() > 0.4) continue;
             const offX = (cx + 1) * stepX - w / 2;
             const wy = -0.7 + (cy + 1) * stepY;
             const wx = x + rx * offX + fx * (d / 2 + 0.02);
             const wz = z + rz * offX + fz * (d / 2 + 0.02);
             const warm = rnd() < 0.7;
-            windowDots.push({
+            windows.push({
               x: wx,
               y: wy,
               z: wz,
-              color: warm ? "#FFE0A8" : "#A0C0FF",
-              size: 0.16 + rnd() * 0.1,
+              warm,
+              size: 0.18 + rnd() * 0.08,
+              ay: Math.atan2(fx, fz),
             });
           }
         }
       }
     }
-    return { buildings, windowDots };
+    return { buildings, windows };
   }, []);
+
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  // Set per-instance matrices for buildings
+  useLayoutEffect(() => {
+    if (!buildingsRef.current) return;
+    buildings.forEach((b, i) => {
+      dummy.position.set(b.x, b.h / 2 - 0.7, b.z);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(b.w, b.h, b.d);
+      dummy.updateMatrix();
+      buildingsRef.current.setMatrixAt(i, dummy.matrix);
+      // Per-instance colour
+      const color = b.lit
+        ? new THREE.Color("#13223a")
+        : new THREE.Color("#070b14");
+      if (buildingsRef.current.instanceColor) {
+        buildingsRef.current.setColorAt(i, color);
+      }
+    });
+    buildingsRef.current.instanceMatrix.needsUpdate = true;
+    if (buildingsRef.current.instanceColor)
+      buildingsRef.current.instanceColor.needsUpdate = true;
+  }, [buildings, dummy]);
+
+  // Window dots
+  useLayoutEffect(() => {
+    if (!windowsRef.current) return;
+    windows.forEach((w, i) => {
+      dummy.position.set(w.x, w.y, w.z);
+      dummy.rotation.set(0, w.ay, 0);
+      dummy.scale.set(w.size, w.size * 1.3, 1);
+      dummy.updateMatrix();
+      windowsRef.current.setMatrixAt(i, dummy.matrix);
+      const c = w.warm
+        ? new THREE.Color("#FFE0A8")
+        : new THREE.Color("#A0C0FF");
+      if (windowsRef.current.instanceColor) {
+        windowsRef.current.setColorAt(i, c);
+      }
+    });
+    windowsRef.current.instanceMatrix.needsUpdate = true;
+    if (windowsRef.current.instanceColor)
+      windowsRef.current.instanceColor.needsUpdate = true;
+  }, [windows, dummy]);
+
+  const tallBuildings = useMemo(
+    () => buildings.filter((b) => b.isTall).slice(0, 5),
+    [buildings]
+  );
 
   return (
     <group>
-      {/* Big moon — flat emissive disc */}
+      {/* Moon */}
       <group position={[-42, 32, -58]}>
         <mesh>
-          <sphereGeometry args={[7, 36, 36]} />
+          <sphereGeometry args={[7, 24, 24]} />
           <meshBasicMaterial color="#F4EFE0" />
         </mesh>
         <mesh>
-          <sphereGeometry args={[9, 36, 36]} />
-          <meshBasicMaterial color="#F4EFE0" transparent opacity={0.16} />
+          <sphereGeometry args={[9, 24, 24]} />
+          <meshBasicMaterial color="#F4EFE0" transparent opacity={0.14} />
         </mesh>
-        <mesh>
-          <sphereGeometry args={[12, 36, 36]} />
-          <meshBasicMaterial color="#F4EFE0" transparent opacity={0.05} />
-        </mesh>
-        <pointLight color="#B8C8E8" intensity={0.5} distance={140} decay={1.0} />
+        <pointLight color="#B8C8E8" intensity={0.45} distance={140} decay={1.0} />
       </group>
 
-      {/* Buildings — boxes with subtle blue-tinted faces */}
-      {data.buildings.map((b, i) => (
-        <mesh key={`b-${i}`} position={[b.x, b.h / 2 - 0.7, b.z]}>
-          <boxGeometry args={[b.w, b.h, b.d]} />
-          <meshStandardMaterial
-            color="#0c1220"
-            roughness={0.9}
-            metalness={0.0}
-            emissive={b.lit ? "#13223a" : "#000000"}
-            emissiveIntensity={b.lit ? 0.55 : 0}
-          />
+      {/* All buildings — single InstancedMesh */}
+      <instancedMesh ref={buildingsRef} args={[null, null, buildings.length]} frustumCulled={false}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial
+          color="#0c1220"
+          roughness={0.9}
+          metalness={0.0}
+          emissive="#0a1426"
+          emissiveIntensity={0.35}
+          vertexColors={false}
+        />
+      </instancedMesh>
+
+      {/* All window dots — single InstancedMesh */}
+      <instancedMesh ref={windowsRef} args={[null, null, windows.length]} frustumCulled={false}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#FFE0A8" transparent opacity={0.92} side={THREE.DoubleSide} />
+      </instancedMesh>
+
+      {/* A few aviation rooftop blinkers (cheap — just 5 spheres) */}
+      {tallBuildings.map((b, i) => (
+        <mesh key={`av-${i}`} position={[b.x, b.h - 0.5, b.z]}>
+          <sphereGeometry args={[0.25, 6, 6]} />
+          <meshBasicMaterial color="#FF3030" />
         </mesh>
       ))}
 
-      {/* Window dots — tiny emissive squares on building facing surfaces */}
-      {data.windowDots.map((w, i) => (
-        <mesh key={`w-${i}`} position={[w.x, w.y, w.z]}>
-          <planeGeometry args={[w.size, w.size * 1.3]} />
-          <meshBasicMaterial color={w.color} transparent opacity={0.92} side={THREE.DoubleSide} />
-        </mesh>
-      ))}
-
-      {/* A few aviation rooftop blinkers — bigger red points on the tallest layer */}
-      {data.buildings
-        .filter((b) => b.h > 22)
-        .slice(0, 6)
-        .map((b, i) => (
-          <mesh key={`av-${i}`} position={[b.x, b.h - 0.5, b.z]}>
-            <sphereGeometry args={[0.25, 8, 8]} />
-            <meshBasicMaterial color="#FF3030" />
-          </mesh>
-        ))}
-
-      {/* Soft haze layers to fade the horizon */}
-      <mesh position={[0, 10, -80]}>
+      {/* Horizon haze */}
+      <mesh position={[0, 12, -82]}>
         <planeGeometry args={[280, 60]} />
-        <meshBasicMaterial color="#162038" transparent opacity={0.5} />
-      </mesh>
-      <mesh position={[0, 22, -90]}>
-        <planeGeometry args={[280, 80]} />
-        <meshBasicMaterial color="#0a1224" transparent opacity={0.8} />
+        <meshBasicMaterial color="#162038" transparent opacity={0.45} />
       </mesh>
     </group>
   );
