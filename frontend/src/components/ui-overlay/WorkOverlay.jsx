@@ -227,16 +227,22 @@ export default function WorkOverlay({ projects }) {
                     border: "1px solid var(--bg-line)",
                     marginBottom: 18,
                     overflow: "hidden",
+                    boxShadow: "0 0 0 1px rgba(255,255,105,0.08), 0 12px 40px rgba(0,0,0,0.5)",
                   }}
                 >
                   {!iframeLoaded && (
                     <div
                       className="absolute inset-0 flex items-center justify-center font-display text-mid"
-                      style={{ fontSize: 10 }}
+                      style={{ fontSize: 10, letterSpacing: "0.12em" }}
                     >
-                      LOADING LIVE PREVIEW…
+                      ◉ LOADING LIVE PREVIEW…
                     </div>
                   )}
+                  {/*
+                    Render the iframe at desktop width (1440px) and scale it down
+                    into the panel for crisp, full-layout rendering instead of
+                    the mobile-layout blur we got before.
+                  */}
                   <iframe
                     key={current.url}
                     src={current.url}
@@ -246,11 +252,14 @@ export default function WorkOverlay({ projects }) {
                     onLoad={() => setIframeLoaded(true)}
                     style={{
                       position: "absolute",
-                      inset: 0,
-                      width: "100%",
-                      height: "100%",
+                      top: 0,
+                      left: 0,
+                      width: "1440px",
+                      height: "900px",
                       border: 0,
                       background: "#000",
+                      transformOrigin: "top left",
+                      transform: "scale(var(--iframe-scale, 0.42))",
                     }}
                     data-testid="project-iframe"
                   />

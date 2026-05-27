@@ -26,13 +26,9 @@ export default function CameraRig() {
     let wp = WAYPOINTS[activeSection];
 
     if (activeSection === "work" && panelOpen) {
-      const RING = 11;
-      const angle = freeDrive ? carAngle : (carRingIndex / 4) * Math.PI * 2;
-      const bx = Math.cos(angle) * (RING + 4.5);
-      const bz = Math.sin(angle) * (RING + 4.5);
-      const cx = Math.cos(angle) * (RING + 1.2);
-      const cz = Math.sin(angle) * (RING + 1.2);
-      wp = { pos: [cx, 3.4, cz], look: [bx, 2.2, bz], fov: 40 };
+      // Frame hero on the LEFT 1/3 of the screen so the right-side panel doesn't
+      // sit on a black void — gives the OG-cutout composition.
+      wp = { pos: [3.6, 2.6, 6.2], look: [-1.6, 1.3, 0], fov: 36 };
     } else if (activeSection === "work") {
       // Chase cam slightly behind & above the car, looking through it to the hero
       const RING = 11;

@@ -276,18 +276,27 @@ canvas {
 /* ============== PROJECT PANEL — RESPONSIVE ============== */
 .project-panel-wrap {
   top: 50%;
-  right: 4vw;
+  right: 3.5vw;
   transform: translateY(-50%);
-  width: min(540px, 46vw);
-  background: rgba(10, 10, 11, 0.86);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--bg-line);
-  padding: 26px 28px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  width: min(580px, 44vw);
+  background: linear-gradient(180deg, rgba(14,14,16,0.92) 0%, rgba(9,9,11,0.94) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  backdrop-filter: blur(18px) saturate(1.1);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 30px 32px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,105,0.04),
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255,255,255,0.04);
   max-height: 86vh;
   overflow-y: auto;
+  --iframe-scale: 0.38;
 }
+
+/* iframe scaling — keep in sync with panel internal width */
+.project-panel-wrap::-webkit-scrollbar { width: 4px; }
+.project-panel-wrap::-webkit-scrollbar-track { background: transparent; }
+.project-panel-wrap::-webkit-scrollbar-thumb { background: var(--bg-line); }
 
 /* ============== MOBILE OVERRIDES ============== */
 @media (max-width: 900px) {
@@ -300,7 +309,8 @@ canvas {
     width: auto;
     max-width: none;
     max-height: 70vh;
-    padding: 20px 18px;
+    padding: 22px 20px;
+    --iframe-scale: 0.34;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
@@ -6,16 +6,14 @@ import { useFrame } from "@react-three/fiber";
 const MODEL_URL = "/models/musclecar.glb";
 
 /**
- * Classic muscle car — GLB model retexture-painted "Mustang red" with chrome trim
- * and emissive headlights. Wheels still spin via parented sub-groups.
- * (Source: Ferrari 308-style GLB from threejs.org — stylized stand-in for Ford
- * Mustang fastback silhouette. Swap MODEL_URL with a Mustang GLB if you have one.)
+ * 1969 Ford Mustang Mach-1 428 Cobra Jet (user-provided GLB).
+ * Mostly preserves the original materials but ensures wheels spin and
+ * headlights/tail-lights are emissive for cinematic dark scenes.
  */
 export default function Car({ groupRef }) {
   const { scene } = useGLTF(MODEL_URL);
   const wheelsRef = useRef([]);
 
-  // Clone + retexture
   const cloned = useMemo(() => {
     const c = scene.clone(true);
     wheelsRef.current = [];
@@ -27,102 +25,66 @@ export default function Car({ groupRef }) {
       obj.frustumCulled = false;
 
       const n = (obj.name || "").toLowerCase();
-      const m = obj.material;
+      const parentName = (obj.parent?.name || "").toLowerCase();
 
-      // Body / paint surfaces → deep Mustang red
+      // Register wheels for spin
       if (
-        n.includes("body") ||
-        n.includes("paint") ||
-        n.includes("ferrari") ||
-        n.includes("hood") ||
-        n.includes("trunk") ||
-        n.includes("roof") ||
-        n.includes("door") ||
-        n.includes("car_paint")
+        n.includes("wheel") ||
+        n.includes("tire") ||
+        n.includes("tyre") ||
+        n.includes("rim") ||
+        parentName.includes("wheel")
       ) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#8a0a0a"),
-          metalness: 0.85,
-          roughness: 0.28,
-          envMapIntensity: 1.0,
-        });
-      }
-      // Glass
-      else if (n.includes("glass") || n.includes("window")) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#0a0a0e"),
-          metalness: 0.9,
-          roughness: 0.05,
-          transparent: true,
-          opacity: 0.6,
-        });
-      }
-      // Headlights → bright emissive
-      else if (n.includes("headlight") || n.includes("front_light")) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#FFE9C4"),
-          emissive: new THREE.Color("#FFE9C4"),
-          emissiveIntensity: 2.0,
-          metalness: 0.4,
-          roughness: 0.2,
-        });
-      }
-      // Tail-lights
-      else if (n.includes("taillight") || n.includes("brake")) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#FF1A1A"),
-          emissive: new THREE.Color("#FF1A1A"),
-          emissiveIntensity: 1.4,
-        });
-      }
-      // Wheels — register for spin
-      else if (n.includes("wheel")) {
         wheelsRef.current.push(obj);
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#0a0a0a"),
-          metalness: 0.5,
-          roughness: 0.5,
-        });
       }
-      // Chrome / trim
-      else if (n.includes("chrome") || n.includes("trim") || n.includes("bumper") || n.includes("grille")) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#cfd4d8"),
-          metalness: 1.0,
-          roughness: 0.18,
-        });
-      }
-      // Tyre
-      else if (n.includes("tyre") || n.includes("tire") || n.includes("rubber")) {
-        obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#080808"),
-          metalness: 0.0,
-          roughness: 0.95,
-        });
-      }
-      // Default → darker chassis tone (avoid white default)
-      else {
-        if (m && m.color) {
-          // Darken whatever was there but keep tone
-          const newMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color("#1a1a1d"),
-            metalness: 0.4,
-            roughness: 0.55,
-          });
-          obj.material = newMat;
+
+      // Brighten headlights
+      if (n.includes("headlight") || n.includes("front_light") || n.includes("light_front")) {
+        if (obj.material) {
+          obj.material = obj.material.clone();
+          if (obj.material.emissive) {
+            obj.material.emissive = new THREE.Color("#FFE9C4");
+            obj.material.emissiveIntensity = 2.2;
+          }
         }
+      }
+
+      // Tail lights
+      if (n.includes("taillight") || n.includes("brake") || n.includes("rear_light")) {
+        if (obj.material) {
+          obj.material = obj.material.clone();
+          if (obj.material.emissive) {
+            obj.material.emissive = new THREE.Color("#FF1A1A");
+            obj.material.emissiveIntensity = 1.4;
+          }
+        }
+      }
+
+      // Subtle env intensity boost on body paints for that wet-asphalt reflection
+      if (obj.material && obj.material.metalness !== undefined && obj.material.metalness > 0.3) {
+        obj.material.envMapIntensity = 1.2;
       }
     });
 
-    // Scale + lift to sit on ground
-    c.scale.setScalar(1.2);
-    c.position.set(0, -0.7, 0);
+    // Scale + lift. The Mustang model from Sketchfab may be in any unit —
+    // we measure its bounding box and normalise to a target length of ~4.5m.
+    const bbox = new THREE.Box3().setFromObject(c);
+    const size = new THREE.Vector3();
+    bbox.getSize(size);
+    const targetLen = 4.6;
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const k = maxDim > 0 ? targetLen / maxDim : 1.0;
+    c.scale.setScalar(k);
+
+    // Re-measure and lift so wheels touch the ground (y = -0.7)
+    const bbox2 = new THREE.Box3().setFromObject(c);
+    c.position.set(0, -0.7 - bbox2.min.y, 0);
     return c;
   }, [scene]);
 
   useFrame((_, dt) => {
     wheelsRef.current.forEach((w) => {
-      if (w) w.rotation.x -= dt * 4.5;
+      if (w) w.rotation.x -= dt * 4.2;
     });
   });
 
@@ -130,16 +92,16 @@ export default function Car({ groupRef }) {
     <group ref={groupRef} position={[0, 0, 0]}>
       <primitive object={cloned} />
 
-      {/* Bright headlight pool + volumetric cone (faked) */}
-      {[-0.6, 0.6].map((x, i) => (
-        <group key={`hl-${i}`} position={[x, 0.4, 2.0]}>
-          <pointLight color="#FFE9C4" intensity={3.2} distance={11} decay={1.6} />
+      {/* Headlight pool + volumetric cone */}
+      {[-0.65, 0.65].map((x, i) => (
+        <group key={`hl-${i}`} position={[x, 0.45, 2.2]}>
+          <pointLight color="#FFE9C4" intensity={3.6} distance={12} decay={1.6} />
           <mesh position={[0, -0.05, 1.6]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[1.1, 3.6, 22, 1, true]} />
+            <coneGeometry args={[1.2, 3.8, 22, 1, true]} />
             <meshBasicMaterial
               color="#FFE9C4"
               transparent
-              opacity={0.07}
+              opacity={0.08}
               side={THREE.DoubleSide}
               depthWrite={false}
             />
@@ -148,7 +110,7 @@ export default function Car({ groupRef }) {
       ))}
 
       {/* Exhaust glow */}
-      <mesh position={[0, 0.05, -2.3]}>
+      <mesh position={[0, 0.05, -2.5]}>
         <sphereGeometry args={[0.18, 10, 10]} />
         <meshBasicMaterial color="#FF5A1F" transparent opacity={0.55} />
       </mesh>
