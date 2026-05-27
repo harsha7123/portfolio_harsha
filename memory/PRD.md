@@ -28,22 +28,34 @@ Reference: *They Call Him OG* teaser (mood) × igloo.inc (structure).
   - `GET /api/profile` — full profile with experience, education, skills, socials
   - `GET /api/projects` — 4 projects with title/url/role/year/description/tags
   - `POST /api/contact` — validated (EmailStr, min_length), honeypot, persists to `contact_messages`
-  - `GET /api/contact` — list newest-first, limit param
+  - `GET /api/contact` — **admin-only** (requires `x-admin-token` header), newest-first, limit param
 - Frontend
   - Preloader with "IGNITION" pixel-yellow progress (4s safety timeout)
-  - 3D scene: stylized humanoid hero (procedural, no face), classic muscle car (procedural with headlight cones), 4 emissive billboards in a ring, wet asphalt ring road, dashed markings, instanced ember particles, city bokeh, ContactShadows
-  - Postprocessing: Bloom, ChromaticAberration, Noise (grain), Vignette
-  - CameraRig: GSAP eased transitions between HOME / WORK / CONTACT waypoints. Work mode does chase-cam; panel-open framings the focused billboard.
-  - Drag-to-rotate hero with inertia + idle auto-rotate.
-  - Scroll-to-section throttled mapping.
+  - 3D scene: stylized humanoid hero (procedural, no face), classic muscle car (procedural with headlight cones), 4 emissive billboards in a ring with **real screenshot textures via thum.io**, wet asphalt ring road, dashed markings, instanced ember particles, city bokeh, ContactShadows
+  - Postprocessing: Bloom, ChromaticAberration, Noise (grain), Vignette — **chromatic & noise disabled on mid/low tier**
+  - **Quality auto-tiering** — detects mobile UA + `navigator.hardwareConcurrency`; reduces DPR cap (1.0/1.35/1.75), shadows, post-FX, ember count
+  - **`prefers-reduced-motion`** — disables hero breathing, auto-rotate, car orbit, ember motion; shortens GSAP camera tweens to 0.2s
+  - CameraRig: GSAP eased transitions between HOME / WORK / CONTACT waypoints; chase-cam during free-drive
+  - Drag-to-rotate hero with inertia + idle auto-rotate
+  - **Tier 2 Free-Drive mode (lightweight, no physics)** — WASD/arrows control velocity + steering around the ring; auto-snaps HUD station counter to nearest billboard; toggle pill in WORK header
+  - **Web Audio synth audio** — `lib/audio.js` (no external files): low-frequency drone + filtered noise wind ambient bed; ignition SFX (noise burst + downward sweep); whoosh + click micro-SFX; gesture-gated; persistent mute toggle in nav stored in `localStorage`
+  - Scroll-to-section throttled mapping
   - HOME panels (left intro, right chips/socials/enter-work)
-  - WORK overlay: station counter, prev/next/view-project, dot indicator
-  - Project panel: title, role/year, description, tags, lazy iframe live preview, VISIT LIVE, DRIVE ON.
-  - CONTACT overlay: form (name/email/message + honeypot) hitting POST /api/contact, side panel with email/linkedin/phone, BACK HOME.
-  - Sonner toasts.
-  - Top nav (HOME / WORK / CONTACT), brand mark, footer meta.
-  - Film grain + scanline overlays for cinematic feel.
-- Verified via testing_agent_v3 — backend 100% (9/9 tests pass) + 4-shot screenshot pass for frontend.
+  - WORK overlay: station counter, prev/next/view-project, dot indicator, free-drive toggle, WASD legend
+  - Project panel: title, role/year, description, tags, lazy iframe live preview, VISIT LIVE, DRIVE ON
+  - CONTACT overlay: form (name/email/message + honeypot) hitting POST /api/contact, side panel with email/linkedin/phone, BACK HOME
+  - **Mobile responsive** — HOME / CONTACT panels stack vertically below 700px; project panel slides to bottom on tablets <900px; nav densifies on small screens
+  - **AA contrast** — text-mid bumped to `#B8B8BA`, text-lo to `#8A8A8E` — passes WCAG AA on void background
+  - Sonner toasts
+  - Top nav (HOME / WORK / CONTACT + sound toggle), brand mark, footer meta
+  - Film grain + scanline overlays for cinematic feel
+- Verified via testing_agent_v3 — **iteration 2: backend 100% (13/13 tests pass)** including admin-token auth coverage
+
+## Polish pass deferred to next iteration
+- WCAG audit beyond contrast (focus rings, screen-reader-only labels)
+- Per-project screenshots refresh schedule (thum.io caches but stale long-term)
+- Real Tier 2 physics car (rapier) — current Tier 2 is keyboard-controlled ring traversal, not full physics
+- Sound: replace synth ambient with CC0 music bed once Harsha sources files
 
 ## Backlog / next phases
 - **P5 Polish** — quality auto-tiering (low/high based on GPU), prefers-reduced-motion fallback, mobile breakpoint pass (stack panels), AA contrast audit on overlay text.
