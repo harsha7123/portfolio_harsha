@@ -5,10 +5,13 @@ import { useFrame } from "@react-three/fiber";
 
 const MODEL_URL = "/models/musclecar.glb";
 
+const DEEP_RED = new THREE.Color("#7a0a0a");
+
 /**
- * 1969 Ford Mustang Mach-1 428 Cobra Jet (user-provided GLB).
- * Mostly preserves the original materials but ensures wheels spin and
- * headlights/tail-lights are emissive for cinematic dark scenes.
+ * 1969 Ford Mustang Mach-1 428 Cobra Jet — repainted deep red and lit
+ * cinematically. Body parts are detected by analysing mesh materials at
+ * load: anything with a saturated red/orange base colour is treated as
+ * paint and overridden to DEEP_RED; glossy chrome/glass are left alone.
  */
 export default function Car({ groupRef }) {
   const { scene } = useGLTF(MODEL_URL);
@@ -27,7 +30,7 @@ export default function Car({ groupRef }) {
       const n = (obj.name || "").toLowerCase();
       const parentName = (obj.parent?.name || "").toLowerCase();
 
-      // Register wheels for spin
+      // Wheels
       if (
         n.includes("wheel") ||
         n.includes("tire") ||
@@ -38,45 +41,61 @@ export default function Car({ groupRef }) {
         wheelsRef.current.push(obj);
       }
 
-      // Brighten headlights
-      if (n.includes("headlight") || n.includes("front_light") || n.includes("light_front")) {
-        if (obj.material) {
-          obj.material = obj.material.clone();
-          if (obj.material.emissive) {
-            obj.material.emissive = new THREE.Color("#FFE9C4");
-            obj.material.emissiveIntensity = 2.2;
-          }
+      const mat = obj.material;
+      if (!mat) return;
+
+      // Detect body-paint surfaces by their original colour (anything mostly
+      // red / orange / dark warm body colour gets repainted DEEP_RED)
+      if (mat.color) {
+        const c1 = mat.color;
+        const isPaint =
+          (c1.r > 0.25 && c1.r > c1.g + 0.05 && c1.r > c1.b + 0.05) || // warm reds
+          (c1.r < 0.1 && c1.g < 0.1 && c1.b < 0.1 && mat.metalness > 0.4); // dark glossy body
+        if (isPaint) {
+          obj.material = mat.clone();
+          obj.material.color = DEEP_RED.clone();
+          obj.material.metalness = 0.85;
+          obj.material.roughness = 0.22;
+          obj.material.envMapIntensity = 1.3;
+          return;
         }
       }
 
-      // Tail lights
-      if (n.includes("taillight") || n.includes("brake") || n.includes("rear_light")) {
-        if (obj.material) {
-          obj.material = obj.material.clone();
-          if (obj.material.emissive) {
-            obj.material.emissive = new THREE.Color("#FF1A1A");
-            obj.material.emissiveIntensity = 1.4;
-          }
+      // Headlights — much brighter for cinematic dark scene
+      if (n.includes("headlight") || n.includes("front_light") || n.includes("light_front") || n.includes("head_light")) {
+        obj.material = mat.clone();
+        if (obj.material.emissive) {
+          obj.material.emissive = new THREE.Color("#FFE9C4");
+          obj.material.emissiveIntensity = 6.0;
+          obj.material.color = new THREE.Color("#FFE9C4");
         }
+        return;
+      }
+      // Tail-lights
+      if (n.includes("taillight") || n.includes("brake") || n.includes("rear_light") || n.includes("tail_light")) {
+        obj.material = mat.clone();
+        if (obj.material.emissive) {
+          obj.material.emissive = new THREE.Color("#FF1A1A");
+          obj.material.emissiveIntensity = 2.0;
+        }
+        return;
       }
 
-      // Subtle env intensity boost on body paints for that wet-asphalt reflection
-      if (obj.material && obj.material.metalness !== undefined && obj.material.metalness > 0.3) {
-        obj.material.envMapIntensity = 1.2;
+      // Wet-asphalt reflection boost on remaining metallic parts
+      if (mat.metalness !== undefined && mat.metalness > 0.3) {
+        mat.envMapIntensity = 1.2;
       }
     });
 
-    // Scale + lift. The Mustang model from Sketchfab may be in any unit —
-    // we measure its bounding box and normalise to a target length of ~4.5m.
+    // Auto-scale to a target length of ~4.4m, lift wheels to ground
     const bbox = new THREE.Box3().setFromObject(c);
     const size = new THREE.Vector3();
     bbox.getSize(size);
-    const targetLen = 4.6;
+    const targetLen = 4.4;
     const maxDim = Math.max(size.x, size.y, size.z);
     const k = maxDim > 0 ? targetLen / maxDim : 1.0;
     c.scale.setScalar(k);
 
-    // Re-measure and lift so wheels touch the ground (y = -0.7)
     const bbox2 = new THREE.Box3().setFromObject(c);
     c.position.set(0, -0.7 - bbox2.min.y, 0);
     return c;
@@ -84,7 +103,7 @@ export default function Car({ groupRef }) {
 
   useFrame((_, dt) => {
     wheelsRef.current.forEach((w) => {
-      if (w) w.rotation.x -= dt * 4.2;
+      if (w) w.rotation.x -= dt * 5.2;
     });
   });
 
@@ -92,16 +111,21 @@ export default function Car({ groupRef }) {
     <group ref={groupRef} position={[0, 0, 0]}>
       <primitive object={cloned} />
 
-      {/* Headlight pool + volumetric cone */}
-      {[-0.65, 0.65].map((x, i) => (
-        <group key={`hl-${i}`} position={[x, 0.45, 2.2]}>
-          <pointLight color="#FFE9C4" intensity={3.6} distance={12} decay={1.6} />
-          <mesh position={[0, -0.05, 1.6]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[1.2, 3.8, 22, 1, true]} />
+      {/* Bright cinematic headlight pools + volumetric cones */}
+      {[-0.7, 0.7].map((x, i) => (
+        <group key={`hl-${i}`} position={[x, 0.5, 2.2]}>
+          <pointLight color="#FFE9C4" intensity={5.5} distance={14} decay={1.4} />
+          {/* Hot inner ball */}
+          <mesh>
+            <sphereGeometry args={[0.14, 14, 12]} />
+            <meshBasicMaterial color="#FFFFFF" />
+          </mesh>
+          <mesh position={[0, -0.05, 1.8]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[1.3, 4.2, 22, 1, true]} />
             <meshBasicMaterial
               color="#FFE9C4"
               transparent
-              opacity={0.08}
+              opacity={0.11}
               side={THREE.DoubleSide}
               depthWrite={false}
             />
@@ -111,8 +135,8 @@ export default function Car({ groupRef }) {
 
       {/* Exhaust glow */}
       <mesh position={[0, 0.05, -2.5]}>
-        <sphereGeometry args={[0.18, 10, 10]} />
-        <meshBasicMaterial color="#FF5A1F" transparent opacity={0.55} />
+        <sphereGeometry args={[0.2, 10, 10]} />
+        <meshBasicMaterial color="#FF5A1F" transparent opacity={0.6} />
       </mesh>
     </group>
   );

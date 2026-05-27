@@ -9,7 +9,7 @@ import Embers from "./Embers";
 import { usePortfolio } from "../../store/usePortfolio";
 import { PROJECTS_FALLBACK } from "../../content/portfolio";
 
-const RING_RADIUS = 11;
+const RING_RADIUS = 6.5;
 
 export default function Arena({ heroRotationY }) {
   const carRef = useRef();
@@ -94,7 +94,7 @@ export default function Arena({ heroRotationY }) {
     if (freeDrive && activeSection === "work") {
       a = carAngle;
     } else if (activeSection === "home" && !reducedMotion) {
-      guidedAngle.current += dt * 0.18;
+      guidedAngle.current += dt * 0.55;  // faster orbit per user request
       a = guidedAngle.current;
     } else if (activeSection === "work") {
       if (!panelOpen) {
@@ -121,7 +121,7 @@ export default function Arena({ heroRotationY }) {
   const billboardPositions = useMemo(() => {
     return PROJECTS_FALLBACK.map((p, i) => {
       const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const r = RING_RADIUS + 4.5;
+      const r = 15.5;  // billboards stay outside on a wider ring
       return {
         ...p,
         position: [Math.cos(a) * r, 2.2, Math.sin(a) * r],

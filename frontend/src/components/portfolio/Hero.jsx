@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { usePortfolio } from "../../store/usePortfolio";
 
-const MODEL_URL = "/models/hero.glb";
+const MODEL_URL = "/models/soldier.glb";
 
 /**
  * Cinematic stylized hero — Mixamo X-Bot mannequin (no military gear).

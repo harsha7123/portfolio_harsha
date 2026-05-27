@@ -278,19 +278,19 @@ canvas {
   top: 50%;
   right: 3.5vw;
   transform: translateY(-50%);
-  width: min(580px, 44vw);
-  background: linear-gradient(180deg, rgba(14,14,16,0.92) 0%, rgba(9,9,11,0.94) 100%);
-  -webkit-backdrop-filter: blur(18px) saturate(1.1);
-  backdrop-filter: blur(18px) saturate(1.1);
-  border: 1px solid rgba(255,255,255,0.08);
+  width: min(640px, 46vw);
+  background: linear-gradient(180deg, rgba(14,14,16,0.94) 0%, rgba(9,9,11,0.96) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  backdrop-filter: blur(20px) saturate(1.15);
+  border: 1px solid rgba(255,255,255,0.09);
   padding: 30px 32px;
   box-shadow:
-    0 0 0 1px rgba(255,255,105,0.04),
-    0 30px 80px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-  max-height: 86vh;
+    0 0 0 1px rgba(255,255,105,0.05),
+    0 30px 80px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  max-height: 90vh;
   overflow-y: auto;
-  --iframe-scale: 0.38;
+  --iframe-scale: 0.45;
 }
 
 /* iframe scaling — keep in sync with panel internal width */

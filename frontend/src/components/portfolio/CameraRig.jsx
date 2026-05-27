@@ -5,9 +5,29 @@ import { usePortfolio } from "../../store/usePortfolio";
 
 const WAYPOINTS = {
   home: { pos: [0, 2.4, 7.5], look: [0, 1.2, 0], fov: 38 },
-  work: { pos: [0, 6.8, 16], look: [0, 1.2, 0], fov: 48 },
   contact: { pos: [0, 1.8, 4.5], look: [0, 1.4, 0], fov: 32 },
 };
+
+const CAR_RING = 6.5;
+const CAM_PERP = 9.5; // perpendicular offset of camera from hero–car midline
+const CAM_HEIGHT = 3.8;
+
+function framingForWork(angle) {
+  // Hero at origin; car at C = (cos*R, 0, sin*R)
+  // Camera placed at midpoint + perpendicular(angle) * CAM_PERP, lifted CAM_HEIGHT
+  // Looks at midpoint so both hero and car are framed in a 3/4 composition.
+  const cx = Math.cos(angle) * CAR_RING;
+  const cz = Math.sin(angle) * CAR_RING;
+  const mx = cx / 2;
+  const mz = cz / 2;
+  const px = -Math.sin(angle);
+  const pz = Math.cos(angle);
+  return {
+    pos: [mx + px * CAM_PERP, CAM_HEIGHT, mz + pz * CAM_PERP],
+    look: [mx, 0.9, mz],
+    fov: 56,
+  };
+}
 
 export default function CameraRig() {
   const { camera } = useThree();
@@ -23,23 +43,26 @@ export default function CameraRig() {
   const stateRef = useRef({ fov: 38 });
 
   useEffect(() => {
-    let wp = WAYPOINTS[activeSection];
+    let wp;
 
-    if (activeSection === "work" && panelOpen) {
-      // Frame hero on the LEFT 1/3 of the screen so the right-side panel doesn't
-      // sit on a black void — gives the OG-cutout composition.
-      wp = { pos: [3.6, 2.6, 6.2], look: [-1.6, 1.3, 0], fov: 36 };
+    if (activeSection === "home") {
+      wp = WAYPOINTS.home;
+    } else if (activeSection === "contact") {
+      wp = WAYPOINTS.contact;
     } else if (activeSection === "work") {
-      // Chase cam slightly behind & above the car, looking through it to the hero
-      const RING = 11;
       const angle = freeDrive ? carAngle : (carRingIndex / 4) * Math.PI * 2;
-      // car sits at (cos*RING, 0, sin*RING); camera sits BEHIND car along the same radial,
-      // i.e. further from origin by `chase` units, then up.
-      const chase = 6.5;
-      const camR = RING + chase;
-      const cx = Math.cos(angle) * camR;
-      const cz = Math.sin(angle) * camR;
-      wp = { pos: [cx, 4.2, cz], look: [0, 1.4, 0], fov: 48 };
+      const base = framingForWork(angle);
+      if (panelOpen) {
+        // Shift framing slightly so hero anchors to LEFT 1/3 of the screen,
+        // leaving room on the right for the panel overlay.
+        wp = {
+          pos: [base.pos[0] - 1.6, base.pos[1] - 0.4, base.pos[2] + 0.6],
+          look: [base.look[0] - 2.2, base.look[1] + 0.4, base.look[2]],
+          fov: 40,
+        };
+      } else {
+        wp = base;
+      }
     }
 
     const dur = reducedMotion ? 0.2 : 1.6;
@@ -70,18 +93,16 @@ export default function CameraRig() {
     });
   }, [activeSection, panelOpen, carRingIndex, carAngle, freeDrive, reducedMotion, camera]);
 
-  // continuous follow when free-driving
+  // Continuous chase when free-driving (don't wait for re-renders)
   useFrame(() => {
     camera.lookAt(lookAt.current.x, lookAt.current.y, lookAt.current.z);
     if (freeDrive && activeSection === "work" && !panelOpen) {
-      const RING = 11;
-      const chase = 6.5;
-      const camR = RING + chase;
       const a = carAngle;
-      const tx = Math.cos(a) * camR;
-      const tz = Math.sin(a) * camR;
-      camera.position.x += (tx - camera.position.x) * 0.06;
-      camera.position.z += (tz - camera.position.z) * 0.06;
+      const f = framingForWork(a);
+      camera.position.x += (f.pos[0] - camera.position.x) * 0.08;
+      camera.position.z += (f.pos[2] - camera.position.z) * 0.08;
+      lookAt.current.x += (f.look[0] - lookAt.current.x) * 0.08;
+      lookAt.current.z += (f.look[2] - lookAt.current.z) * 0.08;
     }
   });
 

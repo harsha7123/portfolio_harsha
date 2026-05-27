@@ -254,12 +254,12 @@ export default function WorkOverlay({ projects }) {
                       position: "absolute",
                       top: 0,
                       left: 0,
-                      width: "1440px",
-                      height: "900px",
+                      width: "1280px",
+                      height: "800px",
                       border: 0,
                       background: "#000",
                       transformOrigin: "top left",
-                      transform: "scale(var(--iframe-scale, 0.42))",
+                      transform: "scale(var(--iframe-scale, 0.46))",
                     }}
                     data-testid="project-iframe"
                   />
