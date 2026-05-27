@@ -74,6 +74,7 @@ export default function CameraRig() {
       z: wp.pos[2],
       duration: dur,
       ease: easeName,
+      overwrite: true,
     });
     gsap.to(lookAt.current, {
       x: wp.look[0],
@@ -81,11 +82,13 @@ export default function CameraRig() {
       z: wp.look[2],
       duration: dur,
       ease: easeName,
+      overwrite: true,
     });
     gsap.to(stateRef.current, {
       fov: wp.fov,
       duration: dur,
       ease: easeName,
+      overwrite: true,
       onUpdate: () => {
         camera.fov = stateRef.current.fov;
         camera.updateProjectionMatrix();

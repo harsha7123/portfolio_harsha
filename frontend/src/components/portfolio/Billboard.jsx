@@ -31,13 +31,9 @@ export default function Billboard({
   }, [tex]);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    if (matRef.current) {
-      // Subtle pulse only when active
-      matRef.current.emissiveIntensity = active
-        ? 0.42 + Math.sin(t * 3.5) * 0.06
-        : 0.22;
-    }
+    // intentionally no-op: meshBasicMaterial has no emissive; brightness is constant.
+    // Kept for future hook-points.
+    void state;
   });
 
   const w = 4.2;
@@ -61,18 +57,15 @@ export default function Billboard({
         <meshStandardMaterial color="#0c0c0e" metalness={0.7} roughness={0.4} />
       </mesh>
 
-      {/* screen */}
+      {/* screen — the texture is shown unlit so the actual website pixels
+          render at full brightness instead of being darkened by scene lighting. */}
       <mesh position={[0, 0, 0]}>
         <planeGeometry args={[w, h]} />
-        <meshStandardMaterial
+        <meshBasicMaterial
           ref={matRef}
           map={tex}
-          emissive="#ffffff"
-          emissiveMap={tex}
-          emissiveIntensity={0.3}
-          metalness={0.0}
-          roughness={0.75}
-          toneMapped={true}
+          color="#ffffff"
+          toneMapped={false}
         />
       </mesh>
 

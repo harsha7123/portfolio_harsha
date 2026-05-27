@@ -121,17 +121,24 @@ export default function Arena({ heroRotationY }) {
     carRef.current.position.y = reducedMotion ? 0 : Math.sin(t * 4) * 0.01;
   });
 
-  const billboardPositions = useMemo(() => {
-    return PROJECTS_FALLBACK.map((p, i) => {
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      const r = 15.5;  // billboards stay outside on a wider ring
-      return {
-        ...p,
-        position: [Math.cos(a) * r, 2.2, Math.sin(a) * r],
-        rotationY: -a + Math.PI / 2 + Math.PI,
-      };
-    });
-  }, []);
+  // Single billboard whose position+content updates with the current station.
+  // Camera in WORK mode looks at midpoint between hero and car from a
+  // perpendicular offset; the billboard sits on the *opposite* side of that
+  // midpoint from the camera, directly in the camera's view cone.
+  const activeStation = useMemo(() => {
+    const i = Math.max(0, Math.min(PROJECTS_FALLBACK.length - 1, carRingIndex));
+    const p = PROJECTS_FALLBACK[i];
+    const a = (i / 4) * Math.PI * 2;
+    const dist = 12;
+    const bbX = Math.cos(a) * (RING_RADIUS / 2) + Math.sin(a) * dist;
+    const bbZ = Math.sin(a) * (RING_RADIUS / 2) - Math.cos(a) * dist;
+    return {
+      ...p,
+      index: i,
+      position: [bbX, 2.2, bbZ],
+      rotationY: Math.atan2(-Math.sin(a), Math.cos(a)),
+    };
+  }, [carRingIndex]);
 
   return (
     <group>
@@ -166,18 +173,17 @@ export default function Arena({ heroRotationY }) {
 
       <Car groupRef={carRef} />
 
-      {billboardPositions.map((p, i) => (
-        <Billboard
-          key={p.id}
-          position={p.position}
-          rotationY={p.rotationY}
-          index={i}
-          title={p.title}
-          accent={p.accent}
-          screenshot={p.screenshot}
-          active={activeSection === "work" && carRingIndex === i}
-        />
-      ))}
+      {/* Single billboard for the active station — content + position cycles */}
+      <Billboard
+        key={activeStation.id}
+        position={activeStation.position}
+        rotationY={activeStation.rotationY}
+        index={activeStation.index}
+        title={activeStation.title}
+        accent={activeStation.accent}
+        screenshot={activeStation.screenshot}
+        active={activeSection === "work"}
+      />
 
       <Embers count={70} radius={14} />
 
