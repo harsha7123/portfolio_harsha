@@ -9,20 +9,23 @@ import {
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 
-export default function Effects() {
+export default function Effects({ quality = "high" }) {
+  const useHeavy = quality === "high";
   return (
     <EffectComposer multisampling={0}>
       <Bloom
-        intensity={0.85}
+        intensity={useHeavy ? 0.85 : 0.55}
         luminanceThreshold={0.25}
         luminanceSmoothing={0.6}
         mipmapBlur
       />
-      <ChromaticAberration
-        offset={new THREE.Vector2(0.0006, 0.0009)}
-        blendFunction={BlendFunction.NORMAL}
-      />
-      <Noise opacity={0.06} premultiply />
+      {useHeavy && (
+        <ChromaticAberration
+          offset={new THREE.Vector2(0.0006, 0.0009)}
+          blendFunction={BlendFunction.NORMAL}
+        />
+      )}
+      {useHeavy && <Noise opacity={0.06} premultiply />}
       <Vignette eskil={false} offset={0.25} darkness={0.85} />
     </EffectComposer>
   );

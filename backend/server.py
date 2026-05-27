@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -18,8 +18,19 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+ADMIN_TOKEN = os.environ.get('ADMIN_TOKEN', '')
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+
+def require_admin(x_admin_token: Optional[str] = Header(default=None)):
+    if not ADMIN_TOKEN:
+        # not configured — deny all
+        raise HTTPException(status_code=503, detail="Admin token not configured")
+    if x_admin_token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    return True
 
 
 # ---------- Models ----------
@@ -70,7 +81,7 @@ async def create_contact(payload: ContactCreate):
 
 
 @api_router.get("/contact", response_model=List[ContactMessage])
-async def list_contacts(limit: int = 100):
+async def list_contacts(limit: int = 100, _: bool = Depends(require_admin)):
     if limit < 1 or limit > 500:
         raise HTTPException(status_code=400, detail="limit out of range")
     items = await db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)

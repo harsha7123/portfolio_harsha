@@ -21,10 +21,10 @@
   --pixel: #FFFF69;
   --pixel-dim: #BFBF4E;
 
-  /* text */
-  --text-hi: #ECECEC;
-  --text-mid: #9A9A9A;
-  --text-lo: #5A5A5E;
+  /* text — AA-passing contrast on void background (#0A0A0B) */
+  --text-hi: #F2F2F2;
+  --text-mid: #B8B8BA;
+  --text-lo: #8A8A8E;
 
   --cool-shadow: #2A3340;
 
@@ -266,4 +266,97 @@ canvas {
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .grain::after, .scanlines::before { animation: none; }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============== PROJECT PANEL — RESPONSIVE ============== */
+.project-panel-wrap {
+  top: 50%;
+  right: 4vw;
+  transform: translateY(-50%);
+  width: min(540px, 46vw);
+  background: rgba(10, 10, 11, 0.86);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--bg-line);
+  padding: 26px 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+/* ============== MOBILE OVERRIDES ============== */
+@media (max-width: 900px) {
+  .project-panel-wrap {
+    top: auto;
+    right: 4vw;
+    left: 4vw;
+    bottom: 24px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    max-height: 70vh;
+    padding: 20px 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* HOME panels stack vertically */
+  [data-testid="home-left-panel"],
+  [data-testid="home-right-panel"] {
+    position: fixed !important;
+    left: 5vw !important;
+    right: 5vw !important;
+    max-width: none !important;
+    width: auto !important;
+    transform: none !important;
+    text-align: left !important;
+  }
+  [data-testid="home-left-panel"] {
+    top: 84px !important;
+  }
+  [data-testid="home-right-panel"] {
+    top: auto !important;
+    bottom: 24px !important;
+    text-align: left !important;
+  }
+  [data-testid="home-right-panel"] .flex.justify-end {
+    justify-content: flex-start !important;
+  }
+
+  /* CONTACT overlay stacks */
+  [data-testid="contact-form"],
+  [data-testid="contact-links"] {
+    position: fixed !important;
+    left: 5vw !important;
+    right: 5vw !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    text-align: left !important;
+  }
+  [data-testid="contact-form"] {
+    top: 80px !important;
+  }
+  [data-testid="contact-links"] {
+    top: auto !important;
+    bottom: 24px !important;
+  }
+
+  /* nav becomes denser on small screens */
+  nav[data-testid="top-nav"] {
+    padding: 14px 16px !important;
+  }
+  .nav-link {
+    padding: 4px 6px !important;
+    font-size: 9px !important;
+  }
+  .btn-pixel, .btn-ember {
+    padding: 10px 14px !important;
+    font-size: 9px !important;
+  }
 }

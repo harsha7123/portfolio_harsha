@@ -4,14 +4,16 @@ import { Suspense } from "react";
 import Arena from "./Arena";
 import CameraRig from "./CameraRig";
 import Effects from "./Effects";
+import { usePortfolio } from "../../store/usePortfolio";
 
 export default function Scene() {
   const dragRef = useRef({ active: false, x: 0, last: 0 });
   const [rot, setRot] = useState(0);
   const inertia = useRef(0);
-  const idleAngle = useRef(0);
+  const { reducedMotion, quality } = usePortfolio();
 
   useEffect(() => {
+    if (reducedMotion) return; // no auto-rotate, no inertia loop
     let raf;
     let lastT = performance.now();
     const tick = () => {
@@ -22,14 +24,13 @@ export default function Scene() {
         setRot((r) => r + inertia.current);
         inertia.current *= 0.92;
       } else if (!dragRef.current.active) {
-        idleAngle.current += dt * 0.12;
         setRot((r) => r + dt * 0.12);
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [reducedMotion]);
 
   const onPointerDown = (e) => {
     dragRef.current.active = true;
@@ -47,11 +48,14 @@ export default function Scene() {
     dragRef.current.active = false;
   };
 
+  // Quality tier → DPR cap
+  const dpr = quality === "low" ? [1, 1] : quality === "mid" ? [1, 1.35] : [1, 1.75];
+
   return (
     <Canvas
-      shadows
-      dpr={[1, 1.6]}
-      gl={{ antialias: true, alpha: false }}
+      shadows={quality !== "low"}
+      dpr={dpr}
+      gl={{ antialias: quality !== "low", alpha: false, powerPreference: "high-performance" }}
       camera={{ position: [0, 2.4, 7.5], fov: 38, near: 0.1, far: 200 }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -63,14 +67,12 @@ export default function Scene() {
       <color attach="background" args={["#050506"]} />
       <fog attach="fog" args={["#050506", 8, 60]} />
 
-      {/* base ambient (very dark) */}
       <ambientLight intensity={0.18} color="#1a1f2c" />
-      {/* moon backlight */}
       <directionalLight position={[-8, 12, -10]} intensity={0.35} color="#7aa0ff" />
 
       <Suspense fallback={null}>
         <Arena heroRotationY={rot} />
-        <Effects />
+        {quality !== "low" && <Effects quality={quality} />}
       </Suspense>
 
       <CameraRig />

@@ -1,7 +1,9 @@
 """Backend API tests for Harsha 3D portfolio.
 Covers: /api/, /api/health, /api/profile, /api/projects, /api/contact (POST + GET).
+Iteration 2: GET /api/contact now requires `x-admin-token` header.
 """
 import os
+import time
 import pytest
 import requests
 
@@ -19,6 +21,8 @@ BASE_URL = (BASE_URL or "").rstrip("/")
 assert BASE_URL, "REACT_APP_BACKEND_URL must be configured"
 
 API = f"{BASE_URL}/api"
+ADMIN_TOKEN = "harsha-admin-2026-neo-noir"
+ADMIN_HEADERS = {"x-admin-token": ADMIN_TOKEN}
 
 
 @pytest.fixture(scope="module")
@@ -54,10 +58,8 @@ class TestProfile:
         assert data["name"] == "HARSHA"
         assert isinstance(data["chips"], list) and len(data["chips"]) > 0
         assert isinstance(data["experience"], list) and len(data["experience"]) >= 2
-        # Samsung R&D Jan 2025 - Jul 2025
         periods = [e.get("period", "") for e in data["experience"]]
         assert any("Jan 2025" in p and "Jul 2025" in p for p in periods), periods
-        # Freelance from Mar 2026
         assert any("Mar 2026" in p for p in periods), periods
         assert isinstance(data["skills"], list) and len(data["skills"]) > 0
         assert "email" in data["socials"]
@@ -80,8 +82,8 @@ class TestProjects:
             assert p["url"].startswith("http")
 
 
-# ---------- Contact ----------
-class TestContact:
+# ---------- Contact POST (public) ----------
+class TestContactPost:
     def test_contact_post_valid_persists(self, session):
         payload = {
             "name": "TEST_Backend Tester",
@@ -97,8 +99,8 @@ class TestContact:
         assert data["email"] == payload["email"]
         assert data["message"] == payload["message"]
 
-        # Verify via list endpoint that it persisted
-        r2 = session.get(f"{API}/contact", timeout=20)
+        # Verify persistence via admin-listed endpoint
+        r2 = session.get(f"{API}/contact?limit=500", headers=ADMIN_HEADERS, timeout=20)
         assert r2.status_code == 200, r2.text
         items = r2.json()
         assert isinstance(items, list)
@@ -130,20 +132,51 @@ class TestContact:
         }
         r = session.post(f"{API}/contact", json=payload, timeout=15)
         assert r.status_code == 200, r.text
-        # response still returns a ContactMessage shape
         body = r.json()
         assert "id" in body and body["message"] == unique_marker
 
-        # verify it was NOT persisted in the list
-        r2 = session.get(f"{API}/contact?limit=500", timeout=20)
-        assert r2.status_code == 200
+        # verify NOT persisted (use admin-authenticated list)
+        r2 = session.get(f"{API}/contact?limit=500", headers=ADMIN_HEADERS, timeout=20)
+        assert r2.status_code == 200, r2.text
         items = r2.json()
         assert not any(it.get("message") == unique_marker for it in items), \
             "honeypot submission should not be persisted"
 
-    def test_contact_list_sorted_newest_first(self, session):
+
+# ---------- Contact GET (admin protected) ----------
+class TestContactGetAdmin:
+    def test_get_contact_without_token_returns_401(self, session):
+        r = session.get(f"{API}/contact", timeout=15)
+        assert r.status_code == 401, f"expected 401, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert "detail" in body
+        assert "Invalid admin token" in body["detail"] or "Admin token" in body["detail"]
+
+    def test_get_contact_with_wrong_token_returns_401(self, session):
+        r = session.get(
+            f"{API}/contact",
+            headers={"x-admin-token": "totally-wrong-token-123"},
+            timeout=15,
+        )
+        assert r.status_code == 401, f"expected 401, got {r.status_code}: {r.text}"
+        body = r.json()
+        assert "detail" in body
+        assert "Invalid admin token" in body["detail"]
+
+    def test_get_contact_with_correct_token_returns_200(self, session):
+        r = session.get(f"{API}/contact", headers=ADMIN_HEADERS, timeout=20)
+        assert r.status_code == 200, r.text
+        items = r.json()
+        assert isinstance(items, list)
+        # If there are items, validate shape
+        for it in items:
+            for key in ["id", "name", "email", "message", "created_at"]:
+                assert key in it, f"contact missing {key}: {it}"
+            # _id from mongo should NOT leak through
+            assert "_id" not in it, f"mongo _id leaked: {it}"
+
+    def test_get_contact_list_sorted_newest_first(self, session):
         # Insert two records, ensure second is newer & appears first
-        import time
         first = session.post(f"{API}/contact", json={
             "name": "TEST_first", "email": "first@example.com",
             "message": "TEST_sort first",
@@ -156,11 +189,15 @@ class TestContact:
         }, timeout=15)
         assert second.status_code == 200
 
-        r = session.get(f"{API}/contact?limit=500", timeout=20)
-        assert r.status_code == 200
+        r = session.get(f"{API}/contact?limit=500", headers=ADMIN_HEADERS, timeout=20)
+        assert r.status_code == 200, r.text
         items = r.json()
-        # find indices of first and second
         idx_first = next((i for i, it in enumerate(items) if it["id"] == first.json()["id"]), None)
         idx_second = next((i for i, it in enumerate(items) if it["id"] == second.json()["id"]), None)
         assert idx_first is not None and idx_second is not None
         assert idx_second < idx_first, "newest record should appear first"
+
+    def test_get_contact_case_sensitive_header_name(self, session):
+        # FastAPI Header() is case-insensitive per HTTP spec; verify both casings work.
+        r = session.get(f"{API}/contact", headers={"X-Admin-Token": ADMIN_TOKEN}, timeout=15)
+        assert r.status_code == 200, r.text
