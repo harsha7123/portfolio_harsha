@@ -6,6 +6,7 @@ import Hero from "./Hero";
 import Car from "./Car";
 import Billboard from "./Billboard";
 import Embers from "./Embers";
+import Atmosphere from "./Atmosphere";
 import { usePortfolio } from "../../store/usePortfolio";
 import { PROJECTS_FALLBACK } from "../../content/portfolio";
 
@@ -173,23 +174,15 @@ export default function Arena({ heroRotationY }) {
           index={i}
           title={p.title}
           accent={p.accent}
-          url={p.url}
+          screenshot={p.screenshot}
           active={activeSection === "work" && carRingIndex === i}
         />
       ))}
 
       <Embers count={70} radius={14} />
 
-      {Array.from({ length: 14 }).map((_, i) => {
-        const a = (i / 14) * Math.PI * 2;
-        const r = 38 + (i % 3) * 4;
-        return (
-          <mesh key={`bo-${i}`} position={[Math.cos(a) * r, 1 + (i % 4) * 1.5, Math.sin(a) * r]}>
-            <sphereGeometry args={[0.18, 8, 8]} />
-            <meshBasicMaterial color={i % 2 ? "#FF8A3D" : "#FFE9C4"} transparent opacity={0.6} />
-          </mesh>
-        );
-      })}
+      {/* Cinematic background atmosphere — moon, skyline, window-lights */}
+      <Atmosphere />
     </group>
   );
 }

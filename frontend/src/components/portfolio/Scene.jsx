@@ -64,11 +64,11 @@ export default function Scene() {
       style={{ position: "fixed", inset: 0, zIndex: 0 }}
       data-testid="portfolio-canvas"
     >
-      <color attach="background" args={["#050506"]} />
-      <fog attach="fog" args={["#050506", 8, 60]} />
+      <color attach="background" args={["#070912"]} />
+      <fog attach="fog" args={["#0c1224", 16, 90]} />
 
-      <ambientLight intensity={0.18} color="#1a1f2c" />
-      <directionalLight position={[-8, 12, -10]} intensity={0.35} color="#7aa0ff" />
+      <ambientLight intensity={0.32} color="#2a3550" />
+      <directionalLight position={[-12, 18, -14]} intensity={0.55} color="#A8C0FF" />
 
       <Suspense fallback={null}>
         <Arena heroRotationY={rot} />

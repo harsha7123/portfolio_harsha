@@ -111,21 +111,16 @@ export default function Car({ groupRef }) {
     <group ref={groupRef} position={[0, 0, 0]}>
       <primitive object={cloned} />
 
-      {/* Soft cinematic headlight pools — no giant hot spheres */}
+      {/* Soft cinematic headlight pools — no volumetric cones (those were ugly) */}
       {[-0.7, 0.7].map((x, i) => (
-        <group key={`hl-${i}`} position={[x, 0.5, 2.2]}>
-          <pointLight color="#FFE9C4" intensity={1.2} distance={9} decay={1.8} />
-          <mesh position={[0, -0.05, 1.4]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.7, 2.6, 18, 1, true]} />
-            <meshBasicMaterial
-              color="#FFE9C4"
-              transparent
-              opacity={0.04}
-              side={THREE.DoubleSide}
-              depthWrite={false}
-            />
-          </mesh>
-        </group>
+        <pointLight
+          key={`hl-${i}`}
+          position={[x, 0.5, 2.2]}
+          color="#FFE9C4"
+          intensity={1.2}
+          distance={9}
+          decay={1.8}
+        />
       ))}
 
       {/* Exhaust glow */}

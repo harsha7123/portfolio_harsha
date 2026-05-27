@@ -43,6 +43,7 @@ export const PROJECTS_FALLBACK = [
     id: "mla",
     title: "My Little Adventure",
     url: "https://mylittleadventure.in",
+    screenshot: "/billboards/mla.jpg",
     role: "Freelance Engineer",
     year: "Freelance",
     description:
@@ -54,6 +55,7 @@ export const PROJECTS_FALLBACK = [
     id: "sukhya",
     title: "Sukhya Med",
     url: "https://sukhya.com",
+    screenshot: "/billboards/sukhya.jpg",
     role: "Freelance Engineer",
     year: "Freelance",
     description:
@@ -65,6 +67,7 @@ export const PROJECTS_FALLBACK = [
     id: "naut",
     title: "NAutomation Labs",
     url: "https://nautomationlabs.com",
+    screenshot: "/billboards/naut.jpg",
     role: "Freelance Engineer",
     year: "Freelance",
     description:
@@ -76,6 +79,7 @@ export const PROJECTS_FALLBACK = [
     id: "v7",
     title: "V7 Computers",
     url: "https://v7computers.in",
+    screenshot: "/billboards/v7.jpg",
     role: "Freelance Engineer",
     year: "Freelance",
     description:
