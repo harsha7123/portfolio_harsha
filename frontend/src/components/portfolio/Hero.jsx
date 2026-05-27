@@ -20,18 +20,20 @@ export default function Hero({ position = [0, 0, 0], rotationY = 0 }) {
   useEffect(() => {
     if (!scene) return;
 
-    // Uniform cinematic coat material — robust across compressed/simplified GLBs.
+    // Self-lit cinematic coat — slight emissive on the body itself so the
+    // hero is readable on ANY device regardless of scene lighting falloff
+    // (small phone viewports were rendering him near-black).
     scene.traverse((obj) => {
       if (obj.isMesh || obj.isSkinnedMesh) {
         obj.castShadow = true;
         obj.receiveShadow = false;
         obj.frustumCulled = false;
         obj.material = new THREE.MeshStandardMaterial({
-          color: new THREE.Color("#2a2024"),
-          metalness: 0.35,
-          roughness: 0.5,
-          emissive: new THREE.Color("#1a0c08"),
-          emissiveIntensity: 0.08,
+          color: new THREE.Color("#544147"),
+          metalness: 0.25,
+          roughness: 0.55,
+          emissive: new THREE.Color("#3a201c"),
+          emissiveIntensity: 0.55,
         });
       }
     });
@@ -76,23 +78,23 @@ export default function Hero({ position = [0, 0, 0], rotationY = 0 }) {
       <spotLight
         position={[2.2, 4.5, 3.5]}
         target-position={[0, 1.2, 0]}
-        angle={0.55}
+        angle={0.6}
         penumbra={0.6}
-        intensity={4.5}
+        intensity={9}
         color="#FFD9A8"
-        distance={14}
-        decay={1.6}
+        distance={20}
+        decay={1.4}
       />
       {/* Gentle warm fill from front */}
       <spotLight
         position={[0, 3.2, 5.5]}
         target-position={[0, 1.4, 0]}
-        angle={0.6}
+        angle={0.65}
         penumbra={0.7}
-        intensity={2.4}
+        intensity={6}
         color="#FFE9C4"
-        distance={12}
-        decay={1.7}
+        distance={18}
+        decay={1.5}
       />
       {/* Cool back-rim */}
       <spotLight
@@ -100,13 +102,13 @@ export default function Hero({ position = [0, 0, 0], rotationY = 0 }) {
         target-position={[0, 1.4, 0]}
         angle={0.55}
         penumbra={0.7}
-        intensity={2.8}
+        intensity={5}
         color="#8FB8FF"
-        distance={14}
-        decay={1.5}
+        distance={18}
+        decay={1.4}
       />
       {/* Soft ember underlight */}
-      <pointLight position={[0, 0.4, 1.6]} color="#FF5A1F" intensity={0.9} distance={5} decay={2} />
+      <pointLight position={[0, 0.4, 1.6]} color="#FF5A1F" intensity={1.4} distance={6} decay={2} />
 
       {/* Subtle cinematic rim halo — smaller, behind hero */}
       <mesh position={[0, 1.2, -0.85]}>
